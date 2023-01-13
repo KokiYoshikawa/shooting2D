@@ -1,7 +1,15 @@
-package shooting
+package game
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
+)
+
+const (
+	ScreenWidth   = 800 // プレイ範囲は480
+	ScreenHeight  = 640
+	playAreaLeft  = 160
+	playAreaRight = 640
+	enemyNum      = 3
 )
 
 type Game struct {
