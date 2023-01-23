@@ -9,7 +9,8 @@ import (
 )
 
 type GameScene struct {
-	input Input
+	input    Input
+	gameover bool
 }
 
 type Chara struct {
@@ -76,16 +77,8 @@ func init() {
 	my_chara.size.width, my_chara.size.height = my_chara.image.Size()
 	col, row = 0, 0
 
-	// 自弾の読み込み
-	for i := 0; i < 3; i++ {
-		my_chara.bullets[i].image, _, err = ebitenutil.NewImageFromFile("public/bullet.png")
-		if err != nil {
-			log.Fatal(err)
-		}
-		my_chara.bullets[i].life = false
-		my_chara.bullets[i].size.width, my_chara.bullets[i].size.height = my_chara.bullets[i].image.Size()
-		my_chara.bullets[i].moveX, my_chara.bullets[i].moveY = 0, -3
-	}
+	//自機
+	initMyCharaAgrrangement()
 
 	// 敵
 	initEnemyArrangement()
@@ -96,6 +89,15 @@ func (g *GameScene) Layout(outsideWidth, outsideHeight int) (screenWidth, screen
 }
 
 func (s *GameScene) Update(state *GameState) error {
+	if s.gameover {
+		if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+			initMyCharaAgrrangement()
+			initEnemyArrangement()
+			state.SceneManager.GoTo(&TitleScene{})
+		}
+		return nil
+	}
+
 	if pressedKey(ebiten.KeyArrowRight) {
 		// 右移動
 		row += 5
@@ -114,7 +116,7 @@ func (s *GameScene) Update(state *GameState) error {
 	}
 
 	// 自機が撃つ
-	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+	if state.Input.IsShootingPressed() {
 		for i := 0; i < 3; i++ {
 			if !my_chara.bullets[i].life {
 				my_chara.bullets[i].life = true
@@ -171,6 +173,9 @@ func (s *GameScene) Update(state *GameState) error {
 			enemys[i].center.y += enemys[i].moveY
 		}
 	}
+
+	s.gameover = checkEnemyNum()
+
 	return nil
 }
 
@@ -241,7 +246,29 @@ func (g *GameScene) Draw(screen *ebiten.Image) {
 	screen.DrawImage(my_chara.image, op)
 }
 
-//
+func checkEnemyNum() bool {
+	for i := 0; i < enemyNum; i++ {
+		if enemys[i].life != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func initMyCharaAgrrangement() {
+	var err error
+	// 自弾の読み込み
+	for i := 0; i < 3; i++ {
+		my_chara.bullets[i].image, _, err = ebitenutil.NewImageFromFile("public/bullet.png")
+		if err != nil {
+			log.Fatal(err)
+		}
+		my_chara.bullets[i].life = false
+		my_chara.bullets[i].size.width, my_chara.bullets[i].size.height = my_chara.bullets[i].image.Size()
+		my_chara.bullets[i].moveX, my_chara.bullets[i].moveY = 0, -3
+	}
+}
+
 func initEnemyArrangement() {
 	var err error
 	for i := 0; i < enemyNum; i++ {
@@ -254,6 +281,7 @@ func initEnemyArrangement() {
 		enemys[i].center.y = 100
 		enemys[i].size.width, enemys[i].size.height = enemys[i].image.Size()
 		enemys[i].moveX, enemys[i].moveY = 1, 0
+		enemys[i].moveMaxX, enemys[i].moveMaxY = 0, 0
 
 		for n := 0; n < 3; n++ {
 			enemys[i].bullets[n].image, _, err = ebitenutil.NewImageFromFile("public/bullet.png")
@@ -262,17 +290,6 @@ func initEnemyArrangement() {
 			}
 		}
 	}
-}
-
-// 特定のキーが押されているかをチェックする
-func pressedKey(str ebiten.Key) bool {
-	inputArray := inpututil.PressedKeys()
-	for _, v := range inputArray {
-		if v == str {
-			return true
-		}
-	}
-	return false
 }
 
 // 当たり判定
