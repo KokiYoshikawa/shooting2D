@@ -43,12 +43,15 @@ type Size struct {
 	height int
 }
 
-var row, col int
-var play_area_width int
-var my_chara Chara
-var enemys [enemyNum]Chara
-var left_image *ebiten.Image
-var right_image *ebiten.Image
+var (
+	row, col        int
+	play_area_width int
+	my_chara        Chara
+	enemys          [enemyNum]Chara
+	left_image      *ebiten.Image
+	right_image     *ebiten.Image
+	gameover_image  *ebiten.Image
+)
 
 func NewGameScene() *GameScene {
 	return &GameScene{}
@@ -64,6 +67,11 @@ func init() {
 	}
 
 	right_image, _, err = ebitenutil.NewImageFromFile("public/right_area.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	gameover_image, _, err = ebitenutil.NewImageFromFile("public/gameover.png")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -244,6 +252,13 @@ func (g *GameScene) Draw(screen *ebiten.Image) {
 
 	// 画像を描画する
 	screen.DrawImage(my_chara.image, op)
+
+	if g.gameover {
+		liWidth, _ := left_image.Size()
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(float64(liWidth), float64(0.0))
+		screen.DrawImage(gameover_image, op)
+	}
 }
 
 func checkEnemyNum() bool {
